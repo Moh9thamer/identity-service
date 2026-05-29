@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Identity.Application/Identity.Application.csproj" />
+    <Project Path="src/Identity.Domain/Identity.Domain.csproj" />
+    <Project Path="src/Identity.Infrastructure/Identity.Infrastructure.csproj" />
+    <Project Path="src/IdentityService.Api/IdentityService.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+</Solution>
