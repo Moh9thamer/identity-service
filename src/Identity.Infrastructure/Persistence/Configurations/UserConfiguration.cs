@@ -40,7 +40,8 @@ namespace Identity.Infrastructure.Persistence.Configurations
 
             builder.Property(u => u.Role)
                 .IsRequired()
-                .HasMaxLength(50);
+                .HasMaxLength(50)
+                .HasConversion<string>();
 
             builder.Property(u => u.EmailVerified)
                 .HasDefaultValue(false);
