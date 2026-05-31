@@ -1,4 +1,6 @@
-﻿using Identity.Infrastructure.Persistence;
+﻿using Identity.Application.Interfaces;
+using Identity.Infrastructure.Persistence;
+using Identity.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +32,8 @@ namespace Identity.Infrastructure
                     }
                 }
             });
+
+            services.AddScoped<IAuthService, AuthService>();
 
             return services;
         }

@@ -1,4 +1,5 @@
 using Identity.Infrastructure;
+using Identity.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddApplicationServices();
 builder.Services.AddPersistenceServices(builder.Configuration);
 
 
