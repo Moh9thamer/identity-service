@@ -1,19 +1,40 @@
 ﻿using Identity.Application.DTOs;
 using Identity.Application.Interfaces;
-using Identity.Domain.Enums;
 using Identity.Domain.Entities;
+using Identity.Domain.Enums;
+using Identity.Infrastructure.Authentication;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Identity.Infrastructure.Services
 {
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _dbContext;
-        public AuthService(AppDbContext dbContext)
+        private readonly ITokenService _tokenService;
+        private readonly JwtSettings _jwtSettings;
+        public AuthService(AppDbContext dbContext, ITokenService tokenService, IOptions<JwtSettings> jwtSettings)
         {
             _dbContext = dbContext;
+            _tokenService = tokenService;
+            _jwtSettings = jwtSettings.Value!;
         }
+
+        public async Task<LoginResponse> LoginAsync(LoginRequest request)
+        {
+           
+            var user = await ValidateUser(request);
+
+            var token = _tokenService.GenerateToken(user);
+
+            return new LoginResponse
+            {
+                AccessToken = token,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
+            };
+        }
+
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
         {
 
@@ -50,6 +71,17 @@ namespace Identity.Infrastructure.Services
         private async Task<bool> IsEmailTaken(string email)
         {
             return await _dbContext.Users.AnyAsync(u => u.Email == email);
+        }
+
+        private async Task<User> ValidateUser(LoginRequest loginRequest)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == loginRequest.Email.ToLower());
+            if (user == null) throw new UnauthorizedAccessException();
+
+            var isPasswordValid = BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash);
+            if (!isPasswordValid) throw new UnauthorizedAccessException();
+
+            return user;
         }
     }
 }   

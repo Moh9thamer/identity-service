@@ -22,5 +22,12 @@ namespace Identity.Api.Controllers
             return StatusCode(201, result);
 
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginRequest request)
+        {
+            var result = await _authService.LoginAsync(request);
+            return Ok(result);
+        }
     }
 }
