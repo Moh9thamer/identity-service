@@ -1,15 +1,15 @@
-using Identity.Infrastructure;
+using Identity.Api.Extensions;
 using Identity.Application;
+using Identity.Infrastructure;
+using Scalar.AspNetCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
-
-
-builder.Services.AddSwaggerGen();
-
+builder.Services.AddOpenApiWithSecurity();
 builder.Services.AddApplicationServices();
 builder.Services.AddPersistenceServices(builder.Configuration);
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 
 builder.Services.AddControllers();
@@ -20,13 +20,13 @@ await app.Services.ApplyMigrationsAsync();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

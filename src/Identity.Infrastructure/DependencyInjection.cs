@@ -1,4 +1,5 @@
 ﻿using Identity.Application.Interfaces;
+using Identity.Infrastructure.Authentication;
 using Identity.Infrastructure.Persistence;
 using Identity.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,11 @@ namespace Identity.Infrastructure
                 }
             });
 
+            services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IUserService, UserService>();
 
             return services;
         }
