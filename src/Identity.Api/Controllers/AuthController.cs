@@ -1,4 +1,5 @@
 ﻿using Identity.Application.DTOs;
+using Identity.Application.DTOs.Auth;
 using Identity.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +30,20 @@ namespace Identity.Api.Controllers
         {
             var result = await _authService.LoginAsync(request);
             return Ok(result);
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken(RefreshTokenRequest request)
+        {
+            var result = await _authService.RefreshTokenAsync(request);
+            return Ok(result);
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout(LogoutRequest request)
+        {
+            await _authService.LogoutAsync(request);
+            return NoContent();
         }
     }
 }

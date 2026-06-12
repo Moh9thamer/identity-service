@@ -1,4 +1,5 @@
 ﻿using Identity.Application.DTOs;
+using Identity.Application.DTOs.Auth;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
@@ -42,10 +43,11 @@ namespace Identity.Infrastructure.Services
 
             var isEmailTaken = await IsEmailTaken(normalizedEmail);
 
-            if(isEmailTaken)
+            if (isEmailTaken)
             {
                 throw new Exception("Email is already taken.");
-            };
+            }
+            ;
 
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
@@ -58,7 +60,7 @@ namespace Identity.Infrastructure.Services
                 Role = UserRole.User
             };
 
-           var registeredUser = await _dbContext.Users.AddAsync(user);
+            var registeredUser = await _dbContext.Users.AddAsync(user);
             await _dbContext.SaveChangesAsync();
 
             return new RegisterResponse
@@ -67,6 +69,48 @@ namespace Identity.Infrastructure.Services
                 Email = registeredUser.Entity.Email
             };
         }
+        public async Task<LoginResponse> LoginAsync(LoginRequest request)
+        {
+
+            var user = await ValidateUser(request);
+
+            var token = _tokenService.GenerateToken(user);
+
+            var refreshToken = await GenerateRefreshTokenAsync(user.Id);
+
+            return new LoginResponse
+            {
+                AccessToken = token,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+                RefreshToken = refreshToken.Token
+            };
+        }
+
+        public async Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request)
+        {
+            var newRefreshToken = await RotateRefreshTokenAsync(request.RefreshToken);
+
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == newRefreshToken.UserId);
+            if (user == null) throw new UnauthorizedAccessException();
+
+            return new RefreshTokenResponse
+            {
+                AccessToken = _tokenService.GenerateToken(user),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+                RefreshToken = newRefreshToken.Token
+            };
+
+        }
+        public async Task LogoutAsync(LogoutRequest request)
+        {
+            var token = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
+            if (token == null) return;
+            token.RevokedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+        }
+
+
+
 
         private async Task<bool> IsEmailTaken(string email)
         {
@@ -82,6 +126,38 @@ namespace Identity.Infrastructure.Services
             if (!isPasswordValid) throw new UnauthorizedAccessException();
 
             return user;
+        }
+
+        private async Task<RefreshToken> GenerateRefreshTokenAsync(Guid userId)
+        {
+            var refreshToken = new RefreshToken
+            {
+                UserId = userId,
+                Token = _tokenService.GenerateRefreshToken(),
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            };
+            await _dbContext.RefreshTokens.AddAsync(refreshToken);
+            await _dbContext.SaveChangesAsync();
+            return refreshToken;
+        }
+
+        private async Task<RefreshToken> RotateRefreshTokenAsync(string refreshToken)
+        {
+            var existingToken = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+            if (existingToken == null || existingToken.ExpiresAt < DateTime.UtcNow || existingToken.RevokedAt != null)
+            {
+                git throw new UnauthorizedAccessException("Invalid refresh token.");
+            }
+            existingToken.RevokedAt = DateTime.UtcNow;
+            var newRefreshToken = new RefreshToken
+            {
+                UserId = existingToken.UserId,
+                Token = _tokenService.GenerateRefreshToken(),
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            };
+            await _dbContext.RefreshTokens.AddAsync(newRefreshToken);
+            await _dbContext.SaveChangesAsync();
+            return newRefreshToken;
         }
     }
 }   
