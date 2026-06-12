@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Identity.Infrastructure.Authentication
@@ -16,6 +17,8 @@ namespace Identity.Infrastructure.Authentication
         {
             _jwtSettings = jwtSettings.Value!;
         }
+
+
         public string GenerateToken(User user)
         {
             var claims = DefineClaims(user);
@@ -28,6 +31,11 @@ namespace Identity.Infrastructure.Authentication
             return handler.WriteToken(token);
 
 
+        }
+
+        public string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
 
         private Claim[] DefineClaims(User user)

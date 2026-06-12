@@ -1,6 +1,6 @@
 ﻿using Identity.Domain.Enums;
 
-namespace Identity.Application.DTOs
+namespace Identity.Application.DTOs.Auth
 {
     public class RegisterResponse
     {
