@@ -1,5 +1,4 @@
-﻿using Identity.Application.DTOs;
-using Identity.Application.DTOs.Auth;
+﻿using Identity.Application.DTOs.Auth;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
@@ -20,20 +19,6 @@ namespace Identity.Infrastructure.Services
             _dbContext = dbContext;
             _tokenService = tokenService;
             _jwtSettings = jwtSettings.Value!;
-        }
-
-        public async Task<LoginResponse> LoginAsync(LoginRequest request)
-        {
-           
-            var user = await ValidateUser(request);
-
-            var token = _tokenService.GenerateToken(user);
-
-            return new LoginResponse
-            {
-                AccessToken = token,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
-            };
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
@@ -146,7 +131,7 @@ namespace Identity.Infrastructure.Services
             var existingToken = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
             if (existingToken == null || existingToken.ExpiresAt < DateTime.UtcNow || existingToken.RevokedAt != null)
             {
-                git throw new UnauthorizedAccessException("Invalid refresh token.");
+                throw new UnauthorizedAccessException("Invalid refresh token.");
             }
             existingToken.RevokedAt = DateTime.UtcNow;
             var newRefreshToken = new RefreshToken

@@ -1,7 +1,5 @@
-﻿using Identity.Application.DTOs;
-using Identity.Application.DTOs.Auth;
+﻿using Identity.Application.DTOs.Auth;
 using Identity.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.Api.Controllers
