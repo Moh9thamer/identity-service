@@ -18,7 +18,6 @@ namespace Identity.Infrastructure.Authentication
             _jwtSettings = jwtSettings.Value!;
         }
 
-
         public string GenerateToken(User user)
         {
             var claims = DefineClaims(user);

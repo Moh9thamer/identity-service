@@ -22,6 +22,20 @@ namespace Identity.Infrastructure.Services
             _jwtSettings = jwtSettings.Value!;
         }
 
+        public async Task<LoginResponse> LoginAsync(LoginRequest request)
+        {
+           
+            var user = await ValidateUser(request);
+
+            var token = _tokenService.GenerateToken(user);
+
+            return new LoginResponse
+            {
+                AccessToken = token,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes)
+            };
+        }
+
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
         {
 
