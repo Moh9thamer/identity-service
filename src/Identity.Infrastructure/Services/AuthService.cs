@@ -1,4 +1,5 @@
-﻿using Identity.Application.DTOs.Auth;
+﻿using FluentValidation;
+using Identity.Application.DTOs.Auth;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
@@ -14,15 +15,27 @@ namespace Identity.Infrastructure.Services
         private readonly AppDbContext _dbContext;
         private readonly ITokenService _tokenService;
         private readonly JwtSettings _jwtSettings;
-        public AuthService(AppDbContext dbContext, ITokenService tokenService, IOptions<JwtSettings> jwtSettings)
+        private readonly IValidator<RegisterRequest> _registerValidator;
+        private readonly IValidator<LoginRequest> _loginValidator;
+
+        public AuthService(
+            AppDbContext dbContext,
+            ITokenService tokenService,
+            IOptions<JwtSettings> jwtSettings,
+            IValidator<RegisterRequest> registerValidator,
+            IValidator<LoginRequest> loginValidator)
         {
             _dbContext = dbContext;
             _tokenService = tokenService;
             _jwtSettings = jwtSettings.Value!;
+            _registerValidator = registerValidator;
+            _loginValidator = loginValidator;
+
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
         {
+            await _registerValidator.ValidateAndThrowAsync(request);
 
             var normalizedEmail = request.Email.ToLower();
 
@@ -56,6 +69,7 @@ namespace Identity.Infrastructure.Services
         }
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
+            await _loginValidator.ValidateAndThrowAsync(request);
 
             var user = await ValidateUser(request);
 
@@ -73,6 +87,7 @@ namespace Identity.Infrastructure.Services
 
         public async Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request)
         {
+
             var newRefreshToken = await RotateRefreshTokenAsync(request.RefreshToken);
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == newRefreshToken.UserId);
