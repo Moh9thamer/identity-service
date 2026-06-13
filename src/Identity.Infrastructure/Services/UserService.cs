@@ -1,4 +1,5 @@
 ﻿using Identity.Application.DTOs.Users;
+using Identity.Application.Exceptions;
 using Identity.Application.Interfaces;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ namespace Identity.Infrastructure.Services
                     Email = u.Email,
                     Name = $"{u.FirstName} {u.LastName}"
                 })
-                .FirstOrDefaultAsync() ?? throw new Exception("User not found.");
+                .FirstOrDefaultAsync() ?? throw new NotFoundException("User is not found");
         }
     }
 }

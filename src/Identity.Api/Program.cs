@@ -1,4 +1,5 @@
 using Identity.Api.Extensions;
+using Identity.Api.Middleware;
 using Identity.Application;
 using Identity.Infrastructure;
 using Scalar.AspNetCore;
@@ -24,6 +25,8 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

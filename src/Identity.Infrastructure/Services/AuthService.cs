@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Identity.Application.DTOs.Auth;
+using Identity.Application.Exceptions;
 using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
@@ -41,11 +42,7 @@ namespace Identity.Infrastructure.Services
 
             var isEmailTaken = await IsEmailTaken(normalizedEmail);
 
-            if (isEmailTaken)
-            {
-                throw new Exception("Email is already taken.");
-            }
-            ;
+            if (isEmailTaken) throw new ConflictException("Email is already taken.");
 
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
