@@ -39,6 +39,7 @@ namespace Identity.Infrastructure
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IEmailService, ConsoleEmailService>();
 
             return services;
         }
