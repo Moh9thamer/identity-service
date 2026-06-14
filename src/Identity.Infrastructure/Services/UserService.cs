@@ -14,6 +14,24 @@ namespace Identity.Infrastructure.Services
         {
             _dbContext = dbContext;
         }
+
+        public async Task<IEnumerable<UserSummaryResponse>> GetAllUsersAsync()
+        {
+            var users = await _dbContext.Users
+                .Select(u => new UserSummaryResponse
+                {
+                    Id = u.Id,
+                    Email = u.Email,
+                    Name = $"{u.FirstName} {u.LastName}",
+                    Role = u.Role,
+                    EmailVerified = u.EmailVerified
+                })
+                .ToListAsync();
+
+            return users;
+        }
+        
+
         public async Task<UserResponse> GetUserAsync(Guid userId)
         {
             return await _dbContext.Users
@@ -24,6 +42,15 @@ namespace Identity.Infrastructure.Services
                     Name = $"{u.FirstName} {u.LastName}"
                 })
                 .FirstOrDefaultAsync() ?? throw new NotFoundException("User is not found");
+        }
+
+        public async Task UpdateRoleAsync(Guid id, UpdateRoleRequest request)
+        {
+           var user = await _dbContext.Users.FindAsync(id) ?? throw new NotFoundException("User is not found");
+
+            user.Role = request.Role;
+
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

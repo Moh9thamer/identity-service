@@ -17,7 +17,6 @@ namespace Identity.Api.Controllers
 
         [Authorize]
         [HttpGet("me")]
-
         public async Task<IActionResult> GetUser()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

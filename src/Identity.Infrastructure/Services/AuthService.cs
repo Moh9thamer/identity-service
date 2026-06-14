@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Identity.Application.DTOs.Auth;
+using Identity.Application.DTOs.Users;
 using Identity.Application.Exceptions;
 using Identity.Application.Interfaces;
 using Identity.Application.Validators.Auth;
