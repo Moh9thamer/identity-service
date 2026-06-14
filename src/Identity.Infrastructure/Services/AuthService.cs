@@ -2,6 +2,7 @@
 using Identity.Application.DTOs.Auth;
 using Identity.Application.Exceptions;
 using Identity.Application.Interfaces;
+using Identity.Application.Validators.Auth;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
 using Identity.Infrastructure.Authentication;
@@ -18,6 +19,8 @@ namespace Identity.Infrastructure.Services
         private readonly JwtSettings _jwtSettings;
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
+        private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
+        private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IEmailService _emailService;
 
         public AuthService(
@@ -26,7 +29,9 @@ namespace Identity.Infrastructure.Services
             IOptions<JwtSettings> jwtSettings,
             IValidator<RegisterRequest> registerValidator,
             IValidator<LoginRequest> loginValidator,
-            IEmailService emailService)
+            IEmailService emailService,
+            IValidator<ForgotPasswordRequest> forgotPasswordValidator,
+            IValidator<ResetPasswordRequest> resetPasswordValidator)
         {
             _dbContext = dbContext;
             _tokenService = tokenService;
@@ -34,6 +39,8 @@ namespace Identity.Infrastructure.Services
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
             _emailService = emailService;
+            _forgotPasswordValidator = forgotPasswordValidator;
+            _resetPasswordValidator = resetPasswordValidator;
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
@@ -147,7 +154,39 @@ namespace Identity.Infrastructure.Services
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            await _forgotPasswordValidator.ValidateAndThrowAsync(request);
 
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
+
+            // no throw  for security reasons, we don't want to reveal whether the email exists or not
+            if (user == null) return;
+
+            user.PasswordResetToken = _tokenService.GenerateRandomToken();
+            user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+            await _dbContext.SaveChangesAsync();
+
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.PasswordResetToken!);
+        }
+        public async Task ResetPasswordAsync(ResetPasswordRequest request)
+        {
+           await _resetPasswordValidator.ValidateAndThrowAsync(request);
+
+           var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token);
+
+            if(user == null) throw new NotFoundException("Invalid password reset token.");
+
+            if (user.PasswordResetTokenExpiry < DateTime.UtcNow) throw new ConflictException("Reset token has expired.");
+
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            user.PasswordHash = hashedPassword;
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiry = null;
+
+            await _dbContext.SaveChangesAsync();
+        }
 
 
         private async Task<bool> IsEmailTaken(string email)
@@ -197,5 +236,6 @@ namespace Identity.Infrastructure.Services
             await _dbContext.SaveChangesAsync();
             return newRefreshToken;
         }
+
     }
 }   
