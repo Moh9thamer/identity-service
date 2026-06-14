@@ -59,5 +59,21 @@ namespace Identity.Api.Controllers
             await _authService.LogoutAsync(request);
             return NoContent();
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
+        {
+            await _authService.ForgotPasswordAsync(request);
+
+            return NoContent();
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+        {
+            await _authService.ResetPasswordAsync(request);
+
+            return NoContent();
+        }
     }
 }

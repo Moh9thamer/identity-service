@@ -10,6 +10,10 @@ public class User : BaseEntity
     public string LastName { get; set; } = string.Empty;
     public UserRole Role { get; set; }
     public bool EmailVerified { get; set; } = false;
+
     public string? VerificationToken { get; set; }
     public DateTime? VerificationTokenExpiry { get; set; }
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
 }

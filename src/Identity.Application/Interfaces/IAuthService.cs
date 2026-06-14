@@ -9,7 +9,9 @@ namespace Identity.Application.Interfaces
        Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request);
        Task LogoutAsync(LogoutRequest request);
        Task VerifyEmailAsync(VerifyEmailRequest request);
-
        Task ResendVerificationEmailAsync(ResendVerificationEmailRequest request);
+
+        Task ForgotPasswordAsync(ForgotPasswordRequest request);
+        Task ResetPasswordAsync (ResetPasswordRequest request);
     }
 }
