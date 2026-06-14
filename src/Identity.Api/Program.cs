@@ -3,9 +3,16 @@ using Identity.Api.Middleware;
 using Identity.Application;
 using Identity.Infrastructure;
 using Scalar.AspNetCore;
+using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+builder.Host.UseSerilog();
 
 builder.Services.AddOpenApiWithSecurity();
 builder.Services.AddApplicationServices();
@@ -28,6 +35,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
