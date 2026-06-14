@@ -6,5 +6,6 @@ namespace Identity.Application.DTOs.Auth
     {
         public Guid UserId { get; set; }
         public required string Email { get; set; }
+        public string Message { get; set; } = "Registration successful. Please check your email to verify your account.";
     }
 }

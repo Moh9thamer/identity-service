@@ -18,20 +18,22 @@ namespace Identity.Infrastructure.Services
         private readonly JwtSettings _jwtSettings;
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
+        private readonly IEmailService _emailService;
 
         public AuthService(
             AppDbContext dbContext,
             ITokenService tokenService,
             IOptions<JwtSettings> jwtSettings,
             IValidator<RegisterRequest> registerValidator,
-            IValidator<LoginRequest> loginValidator)
+            IValidator<LoginRequest> loginValidator,
+            IEmailService emailService)
         {
             _dbContext = dbContext;
             _tokenService = tokenService;
             _jwtSettings = jwtSettings.Value!;
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
-
+            _emailService = emailService;
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
@@ -52,25 +54,64 @@ namespace Identity.Infrastructure.Services
                 PasswordHash = hashedPassword,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                Role = UserRole.User
+                Role = UserRole.User,
+                VerificationToken = _tokenService.GenerateRandomToken(),
+                VerificationTokenExpiry = DateTime.UtcNow.AddHours(24)
             };
 
             var registeredUser = await _dbContext.Users.AddAsync(user);
             await _dbContext.SaveChangesAsync();
 
+            await _emailService.SendVerificationEmailAsync(user.Email, user.VerificationToken!);
+
             return new RegisterResponse
             {
                 UserId = registeredUser.Entity.Id,
-                Email = registeredUser.Entity.Email
+                Email = registeredUser.Entity.Email,
             };
         }
+
+        public async Task VerifyEmailAsync(VerifyEmailRequest request)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.VerificationToken == request.Token);
+
+            if (user == null) throw new NotFoundException("Invalid verification token.");
+
+            if (user.EmailVerified) throw new ConflictException("Email is already verified.");
+
+            if (user.VerificationTokenExpiry < DateTime.UtcNow) throw new ConflictException("Verification token has expired");
+
+            user.VerificationToken = null;
+            user.VerificationTokenExpiry = null;
+            user.EmailVerified = true;
+
+            await _dbContext.SaveChangesAsync();
+        }
+        public async Task ResendVerificationEmailAsync(ResendVerificationEmailRequest request)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
+
+            if (user==null) throw new NotFoundException("User not found.");
+
+            if (user.EmailVerified) throw new ConflictException("Email is already verified.");
+
+            user.VerificationToken = _tokenService.GenerateRandomToken();
+            user.VerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
+
+            await _dbContext.SaveChangesAsync();
+
+            await _emailService.SendVerificationEmailAsync(user.Email, user.VerificationToken!);
+        }
+
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
             await _loginValidator.ValidateAndThrowAsync(request);
 
             var user = await ValidateUser(request);
 
-            var token = _tokenService.GenerateToken(user);
+            if (!user.EmailVerified) throw new ConflictException("Verify your email first.");
+
+            var token = _tokenService.GenerateAccessToken(user);
 
             var refreshToken = await GenerateRefreshTokenAsync(user.Id);
 
@@ -92,7 +133,7 @@ namespace Identity.Infrastructure.Services
 
             return new RefreshTokenResponse
             {
-                AccessToken = _tokenService.GenerateToken(user),
+                AccessToken = _tokenService.GenerateAccessToken(user),
                 ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
                 RefreshToken = newRefreshToken.Token
             };
@@ -130,7 +171,7 @@ namespace Identity.Infrastructure.Services
             var refreshToken = new RefreshToken
             {
                 UserId = userId,
-                Token = _tokenService.GenerateRefreshToken(),
+                Token = _tokenService.GenerateRandomToken(),
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
             await _dbContext.RefreshTokens.AddAsync(refreshToken);
@@ -149,7 +190,7 @@ namespace Identity.Infrastructure.Services
             var newRefreshToken = new RefreshToken
             {
                 UserId = existingToken.UserId,
-                Token = _tokenService.GenerateRefreshToken(),
+                Token = _tokenService.GenerateRandomToken(),
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
             await _dbContext.RefreshTokens.AddAsync(newRefreshToken);

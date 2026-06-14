@@ -23,6 +23,22 @@ namespace Identity.Api.Controllers
 
         }
 
+        [HttpGet("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromQuery] VerifyEmailRequest request)
+        {
+            await _authService.VerifyEmailAsync(request);
+
+            return NoContent();
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerificationEmail(ResendVerificationEmailRequest request)
+        {
+            await _authService.ResendVerificationEmailAsync(request);
+
+            return NoContent();
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {

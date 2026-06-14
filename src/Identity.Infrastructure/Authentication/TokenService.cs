@@ -18,7 +18,7 @@ namespace Identity.Infrastructure.Authentication
             _jwtSettings = jwtSettings.Value!;
         }
 
-        public string GenerateToken(User user)
+        public string GenerateAccessToken(User user)
         {
             var claims = DefineClaims(user);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
@@ -32,7 +32,7 @@ namespace Identity.Infrastructure.Authentication
 
         }
 
-        public string GenerateRefreshToken()
+        public string GenerateRandomToken()
         {
             return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }

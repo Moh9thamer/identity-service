@@ -4,8 +4,8 @@ namespace Identity.Application.Interfaces
 {
     public interface ITokenService
     {
-        public string GenerateToken(User user);
+        public string GenerateAccessToken(User user);
         
-        public string GenerateRefreshToken();
+        public string GenerateRandomToken();
     }
 }
