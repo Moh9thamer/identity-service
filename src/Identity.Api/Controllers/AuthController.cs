@@ -1,7 +1,7 @@
 ﻿using Identity.Application.DTOs.Auth;
-using Identity.Application.DTOs.Users;
 using Identity.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Identity.Api.Controllers
 {
@@ -16,6 +16,7 @@ namespace Identity.Api.Controllers
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request);
@@ -33,6 +34,7 @@ namespace Identity.Api.Controllers
         }
 
         [HttpPost("resend-verification")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ResendVerificationEmail(ResendVerificationEmailRequest request)
         {
             await _authService.ResendVerificationEmailAsync(request);
@@ -41,6 +43,7 @@ namespace Identity.Api.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
             var result = await _authService.LoginAsync(request);
@@ -62,6 +65,7 @@ namespace Identity.Api.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
         {
             await _authService.ForgotPasswordAsync(request);
@@ -70,6 +74,7 @@ namespace Identity.Api.Controllers
         }
 
         [HttpPost("reset-password")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
         {
             await _authService.ResetPasswordAsync(request);
