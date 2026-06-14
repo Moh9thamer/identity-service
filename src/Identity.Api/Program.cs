@@ -11,6 +11,7 @@ builder.Services.AddOpenApiWithSecurity();
 builder.Services.AddApplicationServices();
 builder.Services.AddPersistenceServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddRateLimiting();
 
 
 builder.Services.AddControllers();
@@ -30,6 +31,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
