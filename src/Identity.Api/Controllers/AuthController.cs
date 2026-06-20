@@ -60,7 +60,8 @@ namespace Identity.Api.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout(LogoutRequest request)
         {
-            await _authService.LogoutAsync(request);
+            var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            await _authService.LogoutAsync(request, accessToken);
             return NoContent();
         }
 

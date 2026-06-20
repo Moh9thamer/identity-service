@@ -8,7 +8,7 @@ namespace Identity.Application.Interfaces
        Task<RegisterResponse> RegisterAsync(RegisterRequest request);
        Task<LoginResponse> LoginAsync(LoginRequest request);
        Task<RefreshTokenResponse> RefreshTokenAsync(RefreshTokenRequest request);
-       Task LogoutAsync(LogoutRequest request);
+       Task LogoutAsync(LogoutRequest request, string accessToken);
        Task VerifyEmailAsync(VerifyEmailRequest request);
        Task ResendVerificationEmailAsync(ResendVerificationEmailRequest request);
 

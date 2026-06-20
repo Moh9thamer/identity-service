@@ -10,6 +10,7 @@ using Identity.Infrastructure.Authentication;
 using Identity.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Identity.Infrastructure.Services
 {
@@ -23,6 +24,7 @@ namespace Identity.Infrastructure.Services
         private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IEmailService _emailService;
+        private readonly ITokenBlacklistService _tokenBlacklistService;
 
         public AuthService(
             AppDbContext dbContext,
@@ -32,7 +34,8 @@ namespace Identity.Infrastructure.Services
             IValidator<LoginRequest> loginValidator,
             IEmailService emailService,
             IValidator<ForgotPasswordRequest> forgotPasswordValidator,
-            IValidator<ResetPasswordRequest> resetPasswordValidator)
+            IValidator<ResetPasswordRequest> resetPasswordValidator,
+            ITokenBlacklistService tokenBlacklistService)
         {
             _dbContext = dbContext;
             _tokenService = tokenService;
@@ -42,6 +45,7 @@ namespace Identity.Infrastructure.Services
             _emailService = emailService;
             _forgotPasswordValidator = forgotPasswordValidator;
             _resetPasswordValidator = resetPasswordValidator;
+            _tokenBlacklistService = tokenBlacklistService;
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
@@ -147,11 +151,12 @@ namespace Identity.Infrastructure.Services
             };
 
         }
-        public async Task LogoutAsync(LogoutRequest request)
+        public async Task LogoutAsync(LogoutRequest request, string accessToken)
         {
-            var token = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
-            if (token == null) return;
-            token.RevokedAt = DateTime.UtcNow;
+            await BlacklistAccessTokenAsync(accessToken);
+            var refreshToken = await _dbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken);
+            if (refreshToken == null) return;
+            refreshToken.RevokedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
         }
 
@@ -236,6 +241,16 @@ namespace Identity.Infrastructure.Services
             await _dbContext.RefreshTokens.AddAsync(newRefreshToken);
             await _dbContext.SaveChangesAsync();
             return newRefreshToken;
+        }
+
+        private async Task BlacklistAccessTokenAsync(string accessToken)
+        {
+            var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+            var expiry = jwtToken.ValidTo - DateTime.UtcNow;
+            if (expiry> TimeSpan.Zero)
+            {
+                await _tokenBlacklistService.BlacklistTokenAsync(accessToken, expiry);
+            }
         }
 
     }

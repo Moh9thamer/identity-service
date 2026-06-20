@@ -34,12 +34,18 @@ namespace Identity.Infrastructure
                 }
             });
 
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration["Redis:ConnectionString"];
+            });
+
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IEmailService, ConsoleEmailService>();
+            services.AddScoped<ITokenBlacklistService, TokenBlacklistService>();
 
             return services;
         }
