@@ -9,6 +9,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=IdentityServiceDb;User Id=sa;Password=YourStrong!Passw0rd;Encrypt=true;TrustServerCertificate=true;
       - Jwt__SecretKey=docker-dev-secret-key-change-me-1234567890
+      - Redis__ConnectionString=redis:6379
     depends_on:
       sqlserver:
         condition: service_healthy
