@@ -58,6 +58,7 @@ namespace Identity.Api.Controllers
         }
 
         [HttpPost("logout")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Logout(LogoutRequest request)
         {
             var accessToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
