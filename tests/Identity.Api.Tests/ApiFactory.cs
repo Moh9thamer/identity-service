@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.MsSql;
+using Microsoft.Extensions.Configuration;
 
 namespace Identity.Api.Tests
 {
@@ -14,6 +15,15 @@ namespace Identity.Api.Tests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration(config =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Jwt:SecretKey"] = "test-secret-key-for-integration-tests-minimum-32-chars"
+                });
+            });
+
             builder.ConfigureServices(services =>
             {
                 // Replace SQL Server with test container

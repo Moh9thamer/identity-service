@@ -46,6 +46,7 @@ namespace Identity.Infrastructure
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IEmailService, ConsoleEmailService>();
             services.AddScoped<ITokenBlacklistService, TokenBlacklistService>();
+            services.AddScoped<IValidationService, ValidationService>();
 
             return services;
         }

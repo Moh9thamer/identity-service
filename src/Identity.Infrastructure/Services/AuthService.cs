@@ -1,9 +1,6 @@
-﻿using FluentValidation;
-using Identity.Application.DTOs.Auth;
-using Identity.Application.DTOs.Users;
+﻿using Identity.Application.DTOs.Auth;
 using Identity.Application.Exceptions;
 using Identity.Application.Interfaces;
-using Identity.Application.Validators.Auth;
 using Identity.Domain.Entities;
 using Identity.Domain.Enums;
 using Identity.Infrastructure.Authentication;
@@ -19,10 +16,7 @@ namespace Identity.Infrastructure.Services
         private readonly AppDbContext _dbContext;
         private readonly ITokenService _tokenService;
         private readonly JwtSettings _jwtSettings;
-        private readonly IValidator<RegisterRequest> _registerValidator;
-        private readonly IValidator<LoginRequest> _loginValidator;
-        private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
-        private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
+        private readonly IValidationService _validationService;
         private readonly IEmailService _emailService;
         private readonly ITokenBlacklistService _tokenBlacklistService;
 
@@ -30,27 +24,21 @@ namespace Identity.Infrastructure.Services
             AppDbContext dbContext,
             ITokenService tokenService,
             IOptions<JwtSettings> jwtSettings,
-            IValidator<RegisterRequest> registerValidator,
-            IValidator<LoginRequest> loginValidator,
+            IValidationService validationService,
             IEmailService emailService,
-            IValidator<ForgotPasswordRequest> forgotPasswordValidator,
-            IValidator<ResetPasswordRequest> resetPasswordValidator,
             ITokenBlacklistService tokenBlacklistService)
         {
             _dbContext = dbContext;
             _tokenService = tokenService;
             _jwtSettings = jwtSettings.Value!;
-            _registerValidator = registerValidator;
-            _loginValidator = loginValidator;
             _emailService = emailService;
-            _forgotPasswordValidator = forgotPasswordValidator;
-            _resetPasswordValidator = resetPasswordValidator;
             _tokenBlacklistService = tokenBlacklistService;
+            _validationService = validationService;
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
         {
-            await _registerValidator.ValidateAndThrowAsync(request);
+            await _validationService.ValidateAndThrowAsync(request);
 
             var normalizedEmail = request.Email.ToLower();
 
@@ -103,7 +91,8 @@ namespace Identity.Infrastructure.Services
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
 
-            if (user==null) throw new NotFoundException("User not found.");
+            // no throw  for security reasons, we don't want to reveal whether the email exists or not
+            if (user==null) return;
 
             if (user.EmailVerified) throw new ConflictException("Email is already verified.");
 
@@ -117,7 +106,7 @@ namespace Identity.Infrastructure.Services
 
         public async Task<LoginResponse> LoginAsync(LoginRequest request)
         {
-            await _loginValidator.ValidateAndThrowAsync(request);
+            await _validationService.ValidateAndThrowAsync(request);
 
             var user = await ValidateUser(request);
 
@@ -162,7 +151,7 @@ namespace Identity.Infrastructure.Services
 
         public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            await _forgotPasswordValidator.ValidateAndThrowAsync(request);
+            await _validationService.ValidateAndThrowAsync(request);
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower());
 
@@ -177,7 +166,7 @@ namespace Identity.Infrastructure.Services
         }
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
         {
-           await _resetPasswordValidator.ValidateAndThrowAsync(request);
+           await _validationService.ValidateAndThrowAsync(request);
 
            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token);
 
@@ -245,12 +234,18 @@ namespace Identity.Infrastructure.Services
 
         private async Task BlacklistAccessTokenAsync(string accessToken)
         {
-            var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
-            var expiry = jwtToken.ValidTo - DateTime.UtcNow;
-            if (expiry> TimeSpan.Zero)
+            if (string.IsNullOrEmpty(accessToken)) return;
+
+            try
             {
-                await _tokenBlacklistService.BlacklistTokenAsync(accessToken, expiry);
+                var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+                var expiry = jwtToken.ValidTo - DateTime.UtcNow;
+                if (expiry > TimeSpan.Zero)
+                {
+                    await _tokenBlacklistService.BlacklistTokenAsync(accessToken, expiry);
+                }
             }
+            catch (Exception) { }            
         }
 
     }
