@@ -11,6 +11,11 @@ A backend service that handles user authentication and authorization built with 
 - Logout invalidates the token immediately
 - Role-based access control (User / Admin)
 - Rate limiting on all auth endpoints
+- Request validation with FluentValidation
+- Structured logging with Serilog
+- Global error handling with consistent error responses
+- Integration tests with a real SQL Server container (Testcontainers)
+- CI pipeline with GitHub Actions
 
 ## Setup
 
